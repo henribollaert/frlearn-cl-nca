@@ -222,7 +222,7 @@ class ClassNCA(DML_Algorithm):
             rnd = np.random.permutation(len(y))
 
             for i in rnd:
-                yi = y[i]  # we will change the matrix corresponding to this class, as well as the general matrix
+                yi = y[i]  # we will change the matrix corresponding to this class
 
                 # First we need to transform X with the current matrices.
                 transformed_space = ClassNCA.transformX(matrix_dict, X, y)
