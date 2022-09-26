@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from frlearn.uncategorised.weights import LinearWeights
 from frlearn.neighbour_search_methods import BallTree
 from frlearn.classifiers import FRNN
-from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.model_selection import KFold
 from sklearn.metrics import balanced_accuracy_score
 from frlearn.base import select_class
 from algorithms.clnca import ClassNCA
@@ -13,19 +13,13 @@ from algorithms.lmnn import LMNN
 from algorithms.dmlmj import DMLMJ
 
 
-def get_new_factories(include_chi=True, include_dml=False, k=3):
+def get_new_factories():
     factories = [ManhattanDistanceFactory(),
                  EuclideanDistanceFactory(),
                  ChebyshevDistanceFactory(),
-                 CorrelationFraction(),
                  CosineMeasureFactory(),
                  CanberraFactory(),
                  MahalanobisDistanceFactory()]
-    if include_chi:
-        factories.append(ChiSquareDistanceFactory())
-    # if include_dml:
-    #     factories.extend([LMNNFactory(k),
-    #                       NCAFactory()])
     return factories
 
 
@@ -165,7 +159,7 @@ class CorrelationFactory(DistanceFunctionFactory):
 
 class CosineMeasureFactory(DistanceFunctionFactory):
     """
-    Factory that returns the classical distance derived from the cosine similarity measure.
+    Factory that returns the classical normalised distance derived from the cosine similarity measure.
     """
 
     def __init__(self, normalised=True):
@@ -188,35 +182,12 @@ class CosineMeasureFactory(DistanceFunctionFactory):
             self.normalised = normalised
 
         def __call__(self, a, b):
-            d = 1 - np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-            if self.normalised:
-                return d/2
-            return d
+            return (1 - np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))/2
 
 
 class CanberraFactory(DistanceFunctionFactory):
     """
-    Factory that returns the canberra distance.
-    """
-
-    def get_metric(self) -> DistanceFunction:
-        return CanberraFactory.CanberraDistance()
-
-    @staticmethod
-    def get_name():
-        return "can"
-
-    class CanberraDistance(DistanceFunction):
-        def __call__(self, a, b):
-            nom = np.abs(a - b)
-            den = np.abs(a) + np.abs(b)
-            #  in the canberra metric, we set 0/0 to be 0
-            return np.sum(np.divide(nom, den, out=np.zeros_like(nom), where=den != 0))
-
-
-class NormalisedCanberraFactory(DistanceFunctionFactory):
-    """
-    Factory that returns the canberra distance.
+    Factory that returns the normalised canberra distance.
     """
 
     __slots__ = ("dimension", )
@@ -225,11 +196,11 @@ class NormalisedCanberraFactory(DistanceFunctionFactory):
         self.dimension = X.shape[1]
 
     def get_metric(self) -> DistanceFunction:
-        return NormalisedCanberraFactory.CanberraDistance(self.dimension)
+        return CanberraFactory.CanberraDistance(self.dimension)
 
     @staticmethod
     def get_name():
-        return "norm-can"
+        return "can"
 
     class CanberraDistance(DistanceFunction):
         __slots__ = ("dimension", )
@@ -243,90 +214,67 @@ class NormalisedCanberraFactory(DistanceFunctionFactory):
             #  in the canberra metric, we set 0/0 to be 0
             return np.sum(np.divide(nom, den, out=np.zeros_like(nom), where=den != 0))/self.dimension
 
-
 class MahalanobisDistanceFunction(DistanceFunction):
     """
-    Generic Mahalanobis pseudo-metric
+    Generic Mahalanobis pseudo-metric, which can be squared or not.
     """
 
-    __slots__ = ('matrix',)
+    __slots__ = ('matrix', 'max_d', 'squared', )
 
-    def __init__(self, matrix):
+    def __init__(self, matrix, max_d, squared):
         self.matrix = matrix
+        self.max_d = max_d
+        self.squared = squared
 
     def __call__(self, a, b):
-        return np.sqrt(np.matmul(np.matmul(np.transpose(a - b), self.matrix), (a - b)))
+        d = np.matmul(np.matmul(np.transpose(a - b), self.matrix), (a - b))
+        if not self.squared:
+            d = np.sqrt(d)
+        d /= self.max_d
+        return d
 
 
 class MahalanobisDistanceFactory(DistanceFunctionFactory):
     """
-    Factory that creates fitted Mahalanobis distances.
+    Factory that creates Mahalanobis distances. It
     """
 
-    __slots__ = ('Cinv',)
+    __slots__ = ('matrix', 'max_d', 'squared', )
+
+    def __init__(self, matrix=None, squared=False):
+        self.squared = squared
+        self.matrix = matrix
 
     def fit(self, X, y=None):
         if self.can_apply(X):
-            self.Cinv = np.linalg.inv(np.cov(X, rowvar=False))
+            if self.matrix is None:
+                self.matrix = np.linalg.inv(np.cov(X, rowvar=False))
+            self.max_d = 0
+            for x1 in X:
+                for x2 in X:
+                    d12 = np.matmul(np.matmul(np.transpose(x1 - x2), self.matrix), (x1 - x2))
+                    if not self.squared:
+                        d12 = np.sqrt(d12)
+                    if d12 > self.max_d:
+                        self.max_d = d12
 
     def get_metric(self) -> DistanceFunction:
-        return MahalanobisDistanceFunction(self.Cinv)
+        return MahalanobisDistanceFunction(self.matrix, self.max_d, self.squared)
 
     def can_apply(self, X, y=None) -> bool:
+        if self.matrix is not None:
+            return True
         cov = np.cov(X, rowvar=False)
         return np.linalg.matrix_rank(cov) == cov.shape[0]
 
+    # todo how to convey square here?
     @staticmethod
     def get_name():
         return "mah"
 
-class MaxMahalanobisDistanceFunction(DistanceFunction):
-    """
-    Generic Mahalanobis pseudo-metric
-    """
-
-    __slots__ = ('matrix', 'max_d')
-
-    def __init__(self, matrix, max_d):
-        self.matrix = matrix
-        self.max_d = max_d
-
-    def __call__(self, a, b):
-        return np.sqrt(np.matmul(np.matmul(np.transpose(a - b), self.matrix), (a - b)))/self.max_d
-
-
-class MaxMahalanobisDistanceFactory(DistanceFunctionFactory):
-    """
-    Factory that creates fitted Mahalanobis distances.
-    """
-
-    __slots__ = ('Cinv', 'max_d')
-
-    def fit(self, X, y=None):
-        if self.can_apply(X):
-            self.Cinv = np.linalg.inv(np.cov(X, rowvar=False))
-            self.max_d = 0
-            for x1 in X:
-                for x2 in X:
-                    d12 = np.sqrt(np.matmul(np.matmul(np.transpose(x1 - x2), self.Cinv), (x1 - x2)))
-                    if d12 > self.max_d:
-                        self.max_d = d12
-
-
-    def get_metric(self) -> DistanceFunction:
-        return MaxMahalanobisDistanceFunction(self.Cinv, self.max_d)
-
-    def can_apply(self, X, y=None) -> bool:
-        cov = np.cov(X, rowvar=False)
-        return np.linalg.matrix_rank(cov) == cov.shape[0]
-
-    @staticmethod
-    def get_name():
-        return "maxmah"
-
 
 def neighbour_applier(y, k) -> bool:
-    return k < np.bincount(np.unique(y, return_inverse=True)[1]).min()
+    return k < np.bincount(np.unique(y, return_inverse=True)[1]).min(initial=np.infty)
 
 
 class COMBOFactory(DistanceFunctionFactory):
@@ -344,7 +292,7 @@ class COMBOFactory(DistanceFunctionFactory):
                  verbose=False
                  ):
         if distances is None:
-            distances = get_new_factories(k=k)
+            distances = get_new_factories()
         self.distances = distances
         self.folds = folds
         self.k = k
@@ -404,63 +352,48 @@ class COMBOFactory(DistanceFunctionFactory):
         return "combo3"
 
 
-class NCAFactory(DistanceFunctionFactory):
+class NCAFactory(MahalanobisDistanceFactory):
     """
     Factory which uses a de-cythonized version of pyDML's NCA implementation.
     It divides by the maximum distance.
     """
 
-    __slots__ = ('model', 'matrix', 'k',)
+    __slots__ = ('model', 'matrix',)
 
-    def __init__(self, k=3):
-        self.k = k
+    def __init__(self, squared=False):
+        super().__init__(squared=squared)
         self.model = NCA()
 
     def fit(self, X, y=None):
         self.model.fit(X=X, y=y)
         self.matrix = self.model.metric()
-        self.max_d = 0
-        for x1 in X:
-            for x2 in X:
-                d12 = np.sqrt(np.matmul(np.matmul(np.transpose(x1 - x2), self.matrix), (x1 - x2)))
-                if d12 > self.max_d:
-                    self.max_d = d12
-
-    def get_metric(self) -> DistanceFunction:
-        return MaxMahalanobisDistanceFunction(self.matrix, self.max_d)
+        super(NCAFactory, self).fit(X, y)
 
     def can_apply(self, X, y=None) -> bool:
-        return X.shape[0] < 4000 and neighbour_applier(y, self.k)
+        return X.shape[0] < 4000
 
     @staticmethod
     def get_name():
         return "nca"
 
 
-class LMNNFactory(DistanceFunctionFactory):
+class LMNNFactory(MahalanobisDistanceFactory):
     """
     Factory which uses a de-cythonized version of pyDML's LMNN implementation.
     It divides by the maximum distance.
     """
 
-    __slots__ = ('model', 'matrix', 'k',)
+    __slots__ = ('model', 'matrix', 'k', 'squared', )
 
-    def __init__(self, k=3):
+    def __init__(self, k=3, squared=False):
+        super(LMNNFactory, self).__init__(squared=squared)
         self.k = k
         self.model = LMNN(k=k)
 
     def fit(self, X, y=None):
         self.model.fit(X=X, y=y)
         self.matrix = self.model.metric()
-        self.max_d = 0
-        for x1 in X:
-            for x2 in X:
-                d12 = np.sqrt(np.matmul(np.matmul(np.transpose(x1 - x2), self.matrix), (x1 - x2)))
-                if d12 > self.max_d:
-                    self.max_d = d12
-
-    def get_metric(self) -> DistanceFunction:
-        return MaxMahalanobisDistanceFunction(self.matrix, self.max_d)
+        super(LMNNFactory, self).fit(X, y)
 
     def can_apply(self, X, y=None) -> bool:
         return X.shape[0] < 4000 and neighbour_applier(y, self.k)
@@ -470,7 +403,7 @@ class LMNNFactory(DistanceFunctionFactory):
         return "lmnn"
 
 
-class DMLMJFactory(DistanceFunctionFactory):
+class DMLMJFactory(MahalanobisDistanceFactory):
     """
     Factory which uses a de-cythonized version of pyDML's DMLMJ implementation.
     """
@@ -480,7 +413,9 @@ class DMLMJFactory(DistanceFunctionFactory):
                  num_dims=None,
                  n_neighbors=3,
                  alpha=0.001,
-                 reg_tol=1e-10):
+                 reg_tol=1e-10,
+                 squared=False):
+        super(DMLMJFactory, self).__init__(squared=squared)
         self.k = n_neighbors
         self.model = DMLMJ(num_dims=num_dims,
                            n_neighbors=n_neighbors,
@@ -490,15 +425,7 @@ class DMLMJFactory(DistanceFunctionFactory):
     def fit(self, X, y=None):
         self.model.fit(X=X, y=y)
         self.matrix = self.model.metric()
-        self.max_d = 0
-        for x1 in X:
-            for x2 in X:
-                d12 = np.sqrt(np.matmul(np.matmul(np.transpose(x1 - x2), self.matrix), (x1 - x2)))
-                if d12 > self.max_d:
-                    self.max_d = d12
-
-    def get_metric(self) -> DistanceFunction:
-        return MaxMahalanobisDistanceFunction(self.matrix, self.max_d)
+        super(DMLMJFactory, self).fit(X, y)
 
     def can_apply(self, X, y=None) -> bool:
         return X.shape[0] < 4000 and neighbour_applier(y, self.k)
@@ -1633,7 +1560,7 @@ class ClassKernelDistanceFactory(DistanceFunctionFactory, ABC):
                     g = g - delta
                     it += 1
                     if self.verbose and it % 10 == 0:
-                        print(f'Class {c}, iteration {it}: gamma is {self.g}.')
+                        print(f'Class {c}, iteration {it}: gamma is {self.overall_gamma}.')
                     if it % 1000 == 0:
                         self.learning_rate /= 10
                 self.gamma_dict[c] = g
