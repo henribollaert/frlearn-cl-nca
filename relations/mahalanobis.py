@@ -42,8 +42,7 @@ class MahalanobisDistanceFactory(DistanceFunctionFactory, ABC):
                 if not self.squared:
                     d12 = np.sqrt(d12)
                 if d12 > self.max_d:
-                    max_d = d12
-        return self.max_d
+                    self.max_d = d12
 
     def get_metric(self) -> DistanceFunction:
         return MahalanobisDistanceFunction(self.matrix, self.max_d, self.squared)
