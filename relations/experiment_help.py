@@ -222,8 +222,8 @@ def bold_max(data, format_string="%.3f"):
 
     """
     maxima = data != data.max()
-    bolded = data.apply(lambda x : "\\textbf{%s}" % format_string % x)
-    formatted = data.apply(lambda x : format_string % x)
+    bolded = data.apply(lambda x: "\\textbf{%s}" % format_string % x)
+    formatted = data.apply(lambda x: format_string % x)
     return formatted.where(maxima, bolded)
 
 
@@ -267,6 +267,7 @@ def calculate_score(data_folder,
 
                 # add scores to pandas dataframe
                 for s in wanted_measures:
-                    frame.at[short_name, s] = sum_of_metrics[s]/successful_results[s] if s in sum_of_metrics.keys() else np.NaN
+                    frame.at[short_name, s] = \
+                        sum_of_metrics[s]/successful_results[s] if s in sum_of_metrics.keys() else np.NaN
                     print(short_name, successful_results)
     return frame
