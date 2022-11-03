@@ -1,14 +1,14 @@
 """
 Utility functions for different DML algoritms
+
+Adapted from https://github.com/jlsuarezdiaz/pyDML.
 """
 
 from __future__ import print_function, absolute_import
 import numpy as np
 import warnings
 from six.moves import xrange
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import pairwise_distances
-from scipy.sparse import csr_matrix
 
 
 def metric_to_linear(M):

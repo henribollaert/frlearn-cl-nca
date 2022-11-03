@@ -1,6 +1,7 @@
 """
 Large Margin Nearest Neighbors (LMNN)
 
+Adapted from https://github.com/jlsuarezdiaz/pyDML
 """
 
 from __future__ import print_function, absolute_import
@@ -8,8 +9,7 @@ import numpy as np
 from six.moves import xrange
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.validation import check_X_y
-from sklearn.base import BaseEstimator, ClassifierMixin
-from scipy.spatial.distance import pdist
+from sklearn.base import ClassifierMixin
 
 from .dml_utils import SDProject, calc_outers, calc_outers_i, metric_sq_distance, pairwise_sq_distances_from_dot
 from .dml_algorithm import DML_Algorithm, KernelDML_Algorithm

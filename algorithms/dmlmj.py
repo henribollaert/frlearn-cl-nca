@@ -1,8 +1,7 @@
 """
 Distance Metric Learning through the Maximization of the Jeffrey divergence (DMLMJ)
 
-Created on Fri Feb 23 12:34:43 2018
-
+Adapted from https://github.com/jlsuarezdiaz/pyDML:
 @author: jlsuarezdiaz
 """
 

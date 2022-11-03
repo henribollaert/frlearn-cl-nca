@@ -1,6 +1,7 @@
 """
 Neighbourhood Component Analysis (NCA)
 
+Adapted from https://github.com/jlsuarezdiaz/pyDML.
 """
 
 from __future__ import absolute_import

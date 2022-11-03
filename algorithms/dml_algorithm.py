@@ -1,11 +1,9 @@
 """
 Distance Metric Algorithm basis.
 
-"""
+Adapted from https://github.com/jlsuarezdiaz/pyDML: Authors: Juan Luis Suárez <jlsuarezd@gmail.com>
 
-# Authors: Juan Luis Suárez <jlsuarezd@gmail.com>
-#
-# License:
+"""
 
 from numpy.linalg import cholesky
 from sklearn.base import BaseEstimator, TransformerMixin
