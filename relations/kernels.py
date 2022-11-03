@@ -1,7 +1,7 @@
 import numpy as np
 from abc import ABC
 from frlearn.uncategorised.weights import LinearWeights
-from relations_base import DistanceFunction, DistanceFunctionFactory
+from .relations_base import DistanceFunction, DistanceFunctionFactory
 
 
 class KernelDistance(DistanceFunction):

@@ -7,8 +7,8 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import balanced_accuracy_score
 from frlearn.base import select_class
 
-from relations_base import DistanceFunction, DistanceFunctionFactory
-from mahalanobis import MahalanobisCorrelationDistanceFactory
+from .relations_base import DistanceFunction, DistanceFunctionFactory
+from .mahalanobis import MahalanobisCorrelationDistanceFactory
 
 
 def get_new_factories():

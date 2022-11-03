@@ -5,7 +5,7 @@ from algorithms.nca import NCA
 from algorithms.lmnn import LMNN
 from algorithms.dmlmj import DMLMJ
 
-from relations_base import DistanceFunction, DistanceFunctionFactory
+from .relations_base import DistanceFunction, DistanceFunctionFactory
 
 
 class MahalanobisDistanceFunction(DistanceFunction):
