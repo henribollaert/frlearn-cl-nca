@@ -1,5 +1,5 @@
 """
-CLass-specific
+Class-specific
 Neighbourhood Component Analysis (NCA)
 
 """
@@ -10,7 +10,6 @@ from six.moves import xrange
 from sklearn.utils.validation import check_X_y
 from sklearn.metrics.pairwise import euclidean_distances
 
-from .dml_utils import calc_outers, calc_outers_i
 from .dml_algorithm import DML_Algorithm
 
 
