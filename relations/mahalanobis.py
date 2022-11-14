@@ -121,7 +121,7 @@ class LMNNFactory(MahalanobisDistanceFactory):
 
     __slots__ = ('model', 'matrix', 'k', 'squared', )
 
-    def __init__(self, k=3, squared=False):
+    def __init__(self, k, squared=False):
         super(LMNNFactory, self).__init__(squared=squared)
         self.k = k
         self.model = LMNN(k=k)
@@ -146,8 +146,8 @@ class DMLMJFactory(MahalanobisDistanceFactory):
     __slots__ = ('model', 'matrix', 'k',)
 
     def __init__(self,
+                 n_neighbors,
                  num_dims=None,
-                 n_neighbors=3,
                  alpha=0.001,
                  reg_tol=1e-10,
                  squared=False):
@@ -164,7 +164,7 @@ class DMLMJFactory(MahalanobisDistanceFactory):
         super(DMLMJFactory, self).fit(X, y)
 
     def can_apply(self, X, y=None) -> bool:
-        return X.shape[0] < 4000 and neighbour_applier(y, self.k)
+        return neighbour_applier(y, self.k)  # X.shape[0] < 4000 and
 
     @staticmethod
     def get_name():

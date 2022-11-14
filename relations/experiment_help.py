@@ -269,5 +269,4 @@ def calculate_score(data_folder,
                 for s in wanted_measures:
                     frame.at[short_name, s] = \
                         sum_of_metrics[s]/successful_results[s] if s in sum_of_metrics.keys() else np.NaN
-                    print(short_name, successful_results)
     return frame
