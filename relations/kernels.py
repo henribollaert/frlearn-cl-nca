@@ -19,58 +19,88 @@ class KernelDistance(DistanceFunction):
         return 1 - self.kernel(a, b)
 
 
-class GaussianKernelFactory(DistanceFunctionFactory):
+class KernelFactory(DistanceFunctionFactory, ABC):
+    """
+    Factory for distance based on a relation based on the Gaussian kernel.
+    """
+    _slots__ = ('kernel', 'gamma', '_gamma', )
+
+    def __init__(self, kernel, gamma="auto"):
+        """
+        Initialisation of the kernel factory.
+        Parameters
+        ----------
+        kernel  lambda that takes a gamma parameter and returns the kernel function with that parmater, which
+                is also a lambda funciton with 2 parameters
+        gamma   either the string "auto", in which case gamma will be selected as 1 / nr_of_features of the data set,
+                or a numeric value (int or float)
+        """
+        self.kernel = kernel
+        self.gamma = gamma
+        self._gamma = 1
+
+    def fit(self, X, y=None):
+        if self.gamma == "auto":
+            self._gamma = X.shape[1]
+        elif type(self.gamma) == int or type(self.gamma) == float:
+            self._gamma = self.gamma
+
+    def get_metric(self) -> DistanceFunction:
+        return KernelDistance(self.kernel(self._gamma))
+
+    @staticmethod
+    def get_name():
+        return "generic-kernel"
+
+
+class GaussianKernelFactory(KernelFactory):
     """
     Factory for distance based on a relation based on the Gaussian kernel.
     """
 
     __slots__ = ('gamma', 'folds', 'k', 'weights', 'verbose')
 
-    def __init__(self, gamma=1, folds=0, k=3, weights=LinearWeights(), verbose=False):
-        self.gamma = gamma
-        self.folds = folds
-        self.k = k
-        self.weights = weights
-        self.verbose = verbose
-
-    def get_metric(self) -> DistanceFunction:
-        return KernelDistance(lambda a, b: np.exp(-1 * np.linalg.norm(a - b) ** 2 / self.gamma))
+    def __init__(self, gamma="auto"):
+        super(GaussianKernelFactory, self).__init__(
+            kernel=lambda g: (lambda a, b: np.exp(-1 * np.linalg.norm(a - b) ** 2 / g)),
+            gamma=gamma
+        )
 
     @staticmethod
     def get_name():
-        return "gauss"
+        return "gauss-mult"
 
 
-class ExponentialKernelFactory(DistanceFunctionFactory):
+class ExponentialKernelFactory(KernelFactory):
     """
     Factory for distance based on a relation based on the exponential kernel.
     """
 
-    def __init__(self, gamma=1):
-        self.gamma = gamma
-
-    def get_metric(self) -> DistanceFunction:
-        return KernelDistance(lambda a, b: np.exp(-1 * np.linalg.norm(a - b) / self.gamma))
+    def __init__(self, gamma="auto"):
+        super(ExponentialKernelFactory, self).__init__(
+            kernel=lambda g: (lambda a, b: np.exp(-1 * np.linalg.norm(a - b) / g)),
+            gamma=gamma
+        )
 
     @staticmethod
     def get_name():
-        return "exp"
+        return "exp-mult"
 
 
-class RationalQuadraticKernelFactory(DistanceFunctionFactory):
+class RationalQuadraticKernelFactory(KernelFactory):
     """
     Factory for distance based on a relation based on the rational quadratic kernel.
     """
 
-    def __init__(self, gamma=1):
-        self.gamma = gamma
-
-    def get_metric(self) -> DistanceFunction:
-        return KernelDistance(lambda a, b: self.gamma / (np.square(np.linalg.norm(a - b)) + self.gamma))
+    def __init__(self, gamma="auto"):
+        super(RationalQuadraticKernelFactory, self).__init__(
+            kernel=lambda g: (lambda a, b: g / (np.square(np.linalg.norm(a - b)) + g)),
+            gamma=gamma
+        )
 
     @staticmethod
     def get_name():
-        return "rat"
+        return "rat-mult"
 
 
 def circular_kernel(a, b, g):
@@ -81,20 +111,20 @@ def circular_kernel(a, b, g):
     return 0
 
 
-class CircularKernelFactory(DistanceFunctionFactory):
+class CircularKernelFactory(KernelFactory):
     """
     Factory for distance based on a relation based on the Gaussian kernel.
     """
 
-    def __init__(self, gamma=1):
-        self.gamma = gamma
-
-    def get_metric(self) -> DistanceFunction:
-        return KernelDistance(lambda a, b: circular_kernel(a, b, self.gamma))
+    def __init__(self, gamma="auto"):
+        super(CircularKernelFactory, self).__init__(
+            kernel=lambda g: (lambda a, b: circular_kernel(a, b, g)),
+            gamma=gamma
+        )
 
     @staticmethod
     def get_name():
-        return "circle"
+        return "circle-mult"
 
 
 def spherical_kernel(a, b, g):
@@ -105,20 +135,20 @@ def spherical_kernel(a, b, g):
     return 0
 
 
-class SphericalKernelFactory(DistanceFunctionFactory):
+class SphericalKernelFactory(KernelFactory):
     """
     Factory for distance based on a relation based on the Gaussian kernel.
     """
 
-    def __init__(self, gamma=1):
-        self.gamma = gamma
-
-    def get_metric(self) -> DistanceFunction:
-        return KernelDistance(lambda a, b: spherical_kernel(a, b, self.gamma))
+    def __init__(self, gamma="auto"):
+        super(SphericalKernelFactory, self).__init__(
+            kernel=lambda g: (lambda a, b: spherical_kernel(a, b, g)),
+            gamma=gamma
+        )
 
     @staticmethod
     def get_name():
-        return "sphere"
+        return "sphere-mult"
 
 
 class GradientKernelFactory(DistanceFunctionFactory, ABC):
