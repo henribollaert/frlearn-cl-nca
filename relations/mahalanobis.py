@@ -164,7 +164,7 @@ class DMLMJFactory(MahalanobisDistanceFactory):
         super(DMLMJFactory, self).fit(X, y)
 
     def can_apply(self, X, y=None) -> bool:
-        return neighbour_applier(y, self.k)  # X.shape[0] < 4000 and
+        return X.shape[0] < 4000 and neighbour_applier(y, self.k)
 
     @staticmethod
     def get_name():

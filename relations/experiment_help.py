@@ -256,14 +256,15 @@ def calculate_score(data_folder,
                         _, y_test = get_dataset(dataset_dir, f"{fold + 1}tst")
                         for measure_result in [_ for _ in fold_result_path.iterdir()]:
                             measure_name = measure_result.name[:re.search(r'_', measure_result.name).start()]
-                            predictions = pd.read_csv(measure_result, header=None)
-                            if not predictions.isnull().values.any():
-                                if measure_name not in successful_results:
-                                    successful_results[measure_name] = 1
-                                    sum_of_metrics[measure_name] = metric(y_test, predictions)
-                                else:
-                                    successful_results[measure_name] += 1
-                                    sum_of_metrics[measure_name] += metric(y_test, predictions)
+                            if measure_name in wanted_measures:
+                                predictions = pd.read_csv(measure_result, header=None)
+                                if not predictions.isnull().values.any():
+                                    if measure_name not in successful_results:
+                                        successful_results[measure_name] = 1
+                                        sum_of_metrics[measure_name] = metric(y_test, predictions)
+                                    else:
+                                        successful_results[measure_name] += 1
+                                        sum_of_metrics[measure_name] += metric(y_test, predictions)
 
                 # add scores to pandas dataframe
                 for s in wanted_measures:
