@@ -85,7 +85,7 @@ def neighbour_applier(y, k) -> bool:
     -------
     True if y the above holds.
     """
-    return k < np.bincount(np.unique(y, return_inverse=True)[1]).min(initial=np.infty)
+    return k <= np.bincount(np.unique(y, return_inverse=True)[1]).min(initial=np.infty)
 
 
 class NCAFactory(MahalanobisDistanceFactory):
