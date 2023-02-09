@@ -10,6 +10,7 @@ _to_import = [
     ('statistics', 'IQRNormaliser', [],),
     ('statistics', 'LinearNormaliser', [],),
     ('statistics', 'MaxAbsNormaliser', [],),
+    ('statistics', 'MinMaxNormaliser', [],),
     ('statistics', 'RangeNormaliser', [],),
     ('statistics', 'Standardiser', [],),
     ('uncategorised', 'VectorSizeNormaliser', [],),

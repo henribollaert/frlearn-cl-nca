@@ -1,3 +1,6 @@
 numpy>=1.17.0
 scipy>=1.1.0
 scikit-learn>=0.24.0
+six>=1.16.0
+setuptools>=60.2.0
+pandas>=1.4.4
